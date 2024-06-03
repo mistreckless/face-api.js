@@ -30739,7 +30739,9 @@
                             }
                         });
                         // wait for all media elements being loaded
-                        return [4 /*yield*/, Promise.all(inputArray.map(function (input) { return isMediaElement(input) && awaitMediaLoaded(input); }))];
+                        return [4 /*yield*/, Promise.all(inputArray
+                                .filter(function (input) { return isMediaElement(input); })
+                                .map(function (input) { return awaitMediaLoaded(input); }))];
                     case 1:
                         // wait for all media elements being loaded
                         _a.sent();
@@ -32950,37 +32952,61 @@
     }
 
     function nonMaxSuppression$2(boxes, scores, maxOutputSize, iouThreshold, scoreThreshold) {
-        var numBoxes = boxes.shape[0];
-        var outputSize = Math.min(maxOutputSize, numBoxes);
-        var candidates = scores
-            .map(function (score, boxIndex) { return ({ score: score, boxIndex: boxIndex }); })
-            .filter(function (c) { return c.score > scoreThreshold; })
-            .sort(function (c1, c2) { return c2.score - c1.score; });
-        var suppressFunc = function (x) { return x <= iouThreshold ? 1 : 0; };
-        var selected = [];
-        candidates.forEach(function (c) {
-            if (selected.length >= outputSize) {
-                return;
-            }
-            var originalScore = c.score;
-            for (var j = selected.length - 1; j >= 0; --j) {
-                var iou = IOU(boxes, c.boxIndex, selected[j]);
-                if (iou === 0.0) {
-                    continue;
+        return __awaiter(this, void 0, void 0, function () {
+            var numBoxes, outputSize, candidates, suppressFunc, selected, _i, candidates_1, c, originalScore, j, iou, _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        numBoxes = boxes.shape[0];
+                        outputSize = Math.min(maxOutputSize, numBoxes);
+                        candidates = scores
+                            .map(function (score, boxIndex) { return ({ score: score, boxIndex: boxIndex }); })
+                            .filter(function (c) { return c.score > scoreThreshold; })
+                            .sort(function (c1, c2) { return c2.score - c1.score; });
+                        suppressFunc = function (x) { return x <= iouThreshold ? 1 : 0; };
+                        selected = [];
+                        _i = 0, candidates_1 = candidates;
+                        _b.label = 1;
+                    case 1:
+                        if (!(_i < candidates_1.length)) return [3 /*break*/, 7];
+                        c = candidates_1[_i];
+                        if (selected.length >= outputSize) {
+                            return [3 /*break*/, 6];
+                        }
+                        originalScore = c.score;
+                        j = selected.length - 1;
+                        _b.label = 2;
+                    case 2:
+                        if (!(j >= 0)) return [3 /*break*/, 5];
+                        _a = IOU;
+                        return [4 /*yield*/, boxes.array()];
+                    case 3:
+                        iou = _a.apply(void 0, [_b.sent(), c.boxIndex, selected[j]]);
+                        if (iou === 0.0) {
+                            return [3 /*break*/, 4];
+                        }
+                        c.score *= suppressFunc(iou);
+                        if (c.score <= scoreThreshold) {
+                            return [3 /*break*/, 5];
+                        }
+                        _b.label = 4;
+                    case 4:
+                        --j;
+                        return [3 /*break*/, 2];
+                    case 5:
+                        if (originalScore === c.score) {
+                            selected.push(c.boxIndex);
+                        }
+                        _b.label = 6;
+                    case 6:
+                        _i++;
+                        return [3 /*break*/, 1];
+                    case 7: return [2 /*return*/, selected];
                 }
-                c.score *= suppressFunc(iou);
-                if (c.score <= scoreThreshold) {
-                    break;
-                }
-            }
-            if (originalScore === c.score) {
-                selected.push(c.boxIndex);
-            }
+            });
         });
-        return selected;
     }
-    function IOU(boxes, i, j) {
-        var boxesData = boxes.arraySync();
+    function IOU(boxesData, i, j) {
         var yminI = Math.min(boxesData[i][0], boxesData[i][2]);
         var xminI = Math.min(boxesData[i][1], boxesData[i][3]);
         var ymaxI = Math.max(boxesData[i][0], boxesData[i][2]);
@@ -33180,12 +33206,16 @@
                         case 2:
                             scoresData = _d.apply(_c, [_e.sent()]);
                             iouThreshold = 0.5;
-                            indices = nonMaxSuppression$2(boxes, scoresData, maxResults, iouThreshold, minConfidence);
+                            return [4 /*yield*/, nonMaxSuppression$2(boxes, scoresData, maxResults, iouThreshold, minConfidence)];
+                        case 3:
+                            indices = _e.sent();
                             reshapedDims = netInput.getReshapedInputDimensions(0);
                             inputSize = netInput.inputSize;
                             padX = inputSize / reshapedDims.width;
                             padY = inputSize / reshapedDims.height;
-                            boxesData = boxes.arraySync();
+                            return [4 /*yield*/, boxes.array()];
+                        case 4:
+                            boxesData = _e.sent();
                             results = indices
                                 .map(function (idx) {
                                 var _a = [
@@ -34077,81 +34107,121 @@
         });
     }
     function extractBoundingBoxes(scoresTensor, regionsTensor, scale, scoreThreshold) {
-        // TODO: fix this!, maybe better to use tf.gather here
-        var indices = [];
-        var scoresData = scoresTensor.arraySync();
-        for (var y = 0; y < scoresTensor.shape[0]; y++) {
-            for (var x = 0; x < scoresTensor.shape[1]; x++) {
-                if (scoresData[y][x] >= scoreThreshold) {
-                    indices.push(new Point(x, y));
+        return __awaiter(this, void 0, void 0, function () {
+            var indices, scoresData, y, x, boundingBoxes;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        indices = [];
+                        return [4 /*yield*/, scoresTensor.array()];
+                    case 1:
+                        scoresData = _a.sent();
+                        for (y = 0; y < scoresTensor.shape[0]; y++) {
+                            for (x = 0; x < scoresTensor.shape[1]; x++) {
+                                if (scoresData[y][x] >= scoreThreshold) {
+                                    indices.push(new Point(x, y));
+                                }
+                            }
+                        }
+                        return [4 /*yield*/, Promise.all(indices.map(function (idx) { return __awaiter(_this, void 0, void 0, function () {
+                                var cell, score, regionsData, region;
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0:
+                                            cell = new BoundingBox(Math.round((idx.y * CELL_STRIDE + 1) / scale), Math.round((idx.x * CELL_STRIDE + 1) / scale), Math.round((idx.y * CELL_STRIDE + CELL_SIZE) / scale), Math.round((idx.x * CELL_STRIDE + CELL_SIZE) / scale));
+                                            score = scoresData[idx.y][idx.x];
+                                            return [4 /*yield*/, regionsTensor.array()];
+                                        case 1:
+                                            regionsData = _a.sent();
+                                            region = new MtcnnBox(regionsData[idx.y][idx.x][0], regionsData[idx.y][idx.x][1], regionsData[idx.y][idx.x][2], regionsData[idx.y][idx.x][3]);
+                                            return [2 /*return*/, {
+                                                    cell: cell,
+                                                    score: score,
+                                                    region: region
+                                                }];
+                                    }
+                                });
+                            }); }))];
+                    case 2:
+                        boundingBoxes = _a.sent();
+                        return [2 /*return*/, boundingBoxes];
                 }
-            }
-        }
-        var boundingBoxes = indices.map(function (idx) {
-            var cell = new BoundingBox(Math.round((idx.y * CELL_STRIDE + 1) / scale), Math.round((idx.x * CELL_STRIDE + 1) / scale), Math.round((idx.y * CELL_STRIDE + CELL_SIZE) / scale), Math.round((idx.x * CELL_STRIDE + CELL_SIZE) / scale));
-            var score = scoresData[idx.y][idx.x];
-            var regionsData = regionsTensor.arraySync();
-            var region = new MtcnnBox(regionsData[idx.y][idx.x][0], regionsData[idx.y][idx.x][1], regionsData[idx.y][idx.x][2], regionsData[idx.y][idx.x][3]);
-            return {
-                cell: cell,
-                score: score,
-                region: region
-            };
+            });
         });
-        return boundingBoxes;
     }
     function stage1(imgTensor, scales, scoreThreshold, params, stats) {
-        stats.stage1 = [];
-        var pnetOutputs = scales.map(function (scale) { return tidy(function () {
-            var statsForScale = { scale: scale };
-            var resized = rescaleAndNormalize(imgTensor, scale);
-            var ts = Date.now();
-            var _a = PNet(resized, params), prob = _a.prob, regions = _a.regions;
-            statsForScale.pnet = Date.now() - ts;
-            var scoresTensor = unstack(unstack(prob, 3)[1])[0];
-            var regionsTensor = unstack(regions)[0];
-            return {
-                scoresTensor: scoresTensor,
-                regionsTensor: regionsTensor,
-                scale: scale,
-                statsForScale: statsForScale
-            };
-        }); });
-        var boxesForScale = pnetOutputs.map(function (_a) {
-            var scoresTensor = _a.scoresTensor, regionsTensor = _a.regionsTensor, scale = _a.scale, statsForScale = _a.statsForScale;
-            var boundingBoxes = extractBoundingBoxes(scoresTensor, regionsTensor, scale, scoreThreshold);
-            scoresTensor.dispose();
-            regionsTensor.dispose();
-            if (!boundingBoxes.length) {
-                stats.stage1.push(statsForScale);
-                return [];
-            }
-            var ts = Date.now();
-            var indices = nonMaxSuppression$1(boundingBoxes.map(function (bbox) { return bbox.cell; }), boundingBoxes.map(function (bbox) { return bbox.score; }), 0.5);
-            statsForScale.nms = Date.now() - ts;
-            statsForScale.numBoxes = indices.length;
-            stats.stage1.push(statsForScale);
-            return indices.map(function (boxIdx) { return boundingBoxes[boxIdx]; });
-        });
-        var allBoxes = boxesForScale.reduce(function (all, boxes) { return all.concat(boxes); }, []);
-        var finalBoxes = [];
-        var finalScores = [];
-        if (allBoxes.length > 0) {
-            var ts = Date.now();
-            var indices = nonMaxSuppression$1(allBoxes.map(function (bbox) { return bbox.cell; }), allBoxes.map(function (bbox) { return bbox.score; }), 0.7);
-            stats.stage1_nms = Date.now() - ts;
-            finalScores = indices.map(function (idx) { return allBoxes[idx].score; });
-            finalBoxes = indices
-                .map(function (idx) { return allBoxes[idx]; })
-                .map(function (_a) {
-                var cell = _a.cell, region = _a.region;
-                return new BoundingBox(cell.left + (region.left * cell.width), cell.top + (region.top * cell.height), cell.right + (region.right * cell.width), cell.bottom + (region.bottom * cell.height)).toSquare().round();
+        return __awaiter(this, void 0, void 0, function () {
+            var pnetOutputs, boxesForScale, allBoxes, finalBoxes, finalScores, ts, indices;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        stats.stage1 = [];
+                        pnetOutputs = scales.map(function (scale) { return tidy(function () {
+                            var statsForScale = { scale: scale };
+                            var resized = rescaleAndNormalize(imgTensor, scale);
+                            var ts = Date.now();
+                            var _a = PNet(resized, params), prob = _a.prob, regions = _a.regions;
+                            statsForScale.pnet = Date.now() - ts;
+                            var scoresTensor = unstack(unstack(prob, 3)[1])[0];
+                            var regionsTensor = unstack(regions)[0];
+                            return {
+                                scoresTensor: scoresTensor,
+                                regionsTensor: regionsTensor,
+                                scale: scale,
+                                statsForScale: statsForScale
+                            };
+                        }); });
+                        return [4 /*yield*/, Promise.all(pnetOutputs.map(function (_a) {
+                                var scoresTensor = _a.scoresTensor, regionsTensor = _a.regionsTensor, scale = _a.scale, statsForScale = _a.statsForScale;
+                                return __awaiter(_this, void 0, void 0, function () {
+                                    var boundingBoxes, ts, indices;
+                                    return __generator(this, function (_b) {
+                                        switch (_b.label) {
+                                            case 0: return [4 /*yield*/, extractBoundingBoxes(scoresTensor, regionsTensor, scale, scoreThreshold)];
+                                            case 1:
+                                                boundingBoxes = _b.sent();
+                                                scoresTensor.dispose();
+                                                regionsTensor.dispose();
+                                                if (!boundingBoxes.length) {
+                                                    stats.stage1.push(statsForScale);
+                                                    return [2 /*return*/, []];
+                                                }
+                                                ts = Date.now();
+                                                indices = nonMaxSuppression$1(boundingBoxes.map(function (bbox) { return bbox.cell; }), boundingBoxes.map(function (bbox) { return bbox.score; }), 0.5);
+                                                statsForScale.nms = Date.now() - ts;
+                                                statsForScale.numBoxes = indices.length;
+                                                stats.stage1.push(statsForScale);
+                                                return [2 /*return*/, indices.map(function (boxIdx) { return boundingBoxes[boxIdx]; })];
+                                        }
+                                    });
+                                });
+                            }))];
+                    case 1:
+                        boxesForScale = _a.sent();
+                        allBoxes = boxesForScale.reduce(function (all, boxes) { return all.concat(boxes); }, []);
+                        finalBoxes = [];
+                        finalScores = [];
+                        if (allBoxes.length > 0) {
+                            ts = Date.now();
+                            indices = nonMaxSuppression$1(allBoxes.map(function (bbox) { return bbox.cell; }), allBoxes.map(function (bbox) { return bbox.score; }), 0.7);
+                            stats.stage1_nms = Date.now() - ts;
+                            finalScores = indices.map(function (idx) { return allBoxes[idx].score; });
+                            finalBoxes = indices
+                                .map(function (idx) { return allBoxes[idx]; })
+                                .map(function (_a) {
+                                var cell = _a.cell, region = _a.region;
+                                return new BoundingBox(cell.left + (region.left * cell.width), cell.top + (region.top * cell.height), cell.right + (region.right * cell.width), cell.bottom + (region.bottom * cell.height)).toSquare().round();
+                            });
+                        }
+                        return [2 /*return*/, {
+                                boxes: finalBoxes,
+                                scores: finalScores
+                            }];
+                }
             });
-        }
-        return {
-            boxes: finalBoxes,
-            scores: finalScores
-        };
+        });
     }
 
     function extractImagePatches(img, boxes, _a) {
@@ -34220,6 +34290,7 @@
     function stage2(img, inputBoxes, scoreThreshold, params, stats) {
         return __awaiter(this, void 0, void 0, function () {
             var ts, rnetInputs, rnetOuts, scoresTensor, scores, _a, _b, indices, filteredBoxes, filteredScores, finalBoxes, finalScores, indicesNms, regions_1;
+            var _this = this;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
@@ -34254,17 +34325,27 @@
                         filteredScores = indices.map(function (idx) { return scores[idx]; });
                         finalBoxes = [];
                         finalScores = [];
-                        if (filteredBoxes.length > 0) {
-                            ts = Date.now();
-                            indicesNms = nonMaxSuppression$1(filteredBoxes, filteredScores, 0.7);
-                            stats.stage2_nms = Date.now() - ts;
-                            regions_1 = indicesNms.map(function (idx) {
-                                var regionsData = rnetOuts[indices[idx]].regions.arraySync();
-                                return new MtcnnBox(regionsData[0][0], regionsData[0][1], regionsData[0][2], regionsData[0][3]);
-                            });
-                            finalScores = indicesNms.map(function (idx) { return filteredScores[idx]; });
-                            finalBoxes = indicesNms.map(function (idx, i) { return filteredBoxes[idx].calibrate(regions_1[i]); });
-                        }
+                        if (!(filteredBoxes.length > 0)) return [3 /*break*/, 4];
+                        ts = Date.now();
+                        indicesNms = nonMaxSuppression$1(filteredBoxes, filteredScores, 0.7);
+                        stats.stage2_nms = Date.now() - ts;
+                        return [4 /*yield*/, Promise.all(indicesNms.map(function (idx) { return __awaiter(_this, void 0, void 0, function () {
+                                var regionsData;
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0: return [4 /*yield*/, rnetOuts[indices[idx]].regions.array()];
+                                        case 1:
+                                            regionsData = _a.sent();
+                                            return [2 /*return*/, new MtcnnBox(regionsData[0][0], regionsData[0][1], regionsData[0][2], regionsData[0][3])];
+                                    }
+                                });
+                            }); }))];
+                    case 3:
+                        regions_1 = _c.sent();
+                        finalScores = indicesNms.map(function (idx) { return filteredScores[idx]; });
+                        finalBoxes = indicesNms.map(function (idx, i) { return filteredBoxes[idx].calibrate(regions_1[i]); });
+                        _c.label = 4;
+                    case 4:
                         rnetOuts.forEach(function (t) {
                             t.regions.dispose();
                             t.scores.dispose();
@@ -34300,6 +34381,7 @@
     function stage3(img, inputBoxes, scoreThreshold, params, stats) {
         return __awaiter(this, void 0, void 0, function () {
             var ts, onetInputs, onetOuts, scoresTensor, scores, _a, _b, indices, filteredRegions, filteredBoxes, filteredScores, finalBoxes, finalScores, points, indicesNms;
+            var _this = this;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
@@ -34330,29 +34412,48 @@
                             var idx = _a.idx;
                             return idx;
                         });
-                        filteredRegions = indices.map(function (idx) {
-                            var regionsData = onetOuts[idx].regions.arraySync();
-                            return new MtcnnBox(regionsData[0][0], regionsData[0][1], regionsData[0][2], regionsData[0][3]);
-                        });
+                        return [4 /*yield*/, Promise.all(indices.map(function (idx) { return __awaiter(_this, void 0, void 0, function () {
+                                var regionsData;
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0: return [4 /*yield*/, onetOuts[idx].regions.array()];
+                                        case 1:
+                                            regionsData = _a.sent();
+                                            return [2 /*return*/, new MtcnnBox(regionsData[0][0], regionsData[0][1], regionsData[0][2], regionsData[0][3])];
+                                    }
+                                });
+                            }); }))];
+                    case 3:
+                        filteredRegions = _c.sent();
                         filteredBoxes = indices
                             .map(function (idx, i) { return inputBoxes[idx].calibrate(filteredRegions[i]); });
                         filteredScores = indices.map(function (idx) { return scores[idx]; });
                         finalBoxes = [];
                         finalScores = [];
                         points = [];
-                        if (filteredBoxes.length > 0) {
-                            ts = Date.now();
-                            indicesNms = nonMaxSuppression$1(filteredBoxes, filteredScores, 0.7, false);
-                            stats.stage3_nms = Date.now() - ts;
-                            finalBoxes = indicesNms.map(function (idx) { return filteredBoxes[idx]; });
-                            finalScores = indicesNms.map(function (idx) { return filteredScores[idx]; });
-                            points = indicesNms.map(function (idx, i) {
-                                return Array(5).fill(0).map(function (_, ptIdx) {
-                                    var pointsData = onetOuts[idx].points.arraySync();
-                                    return new Point(((pointsData[0][ptIdx] * (finalBoxes[i].width + 1)) + finalBoxes[i].left), ((pointsData[0][ptIdx + 5] * (finalBoxes[i].height + 1)) + finalBoxes[i].top));
-                                });
-                            });
-                        }
+                        if (!(filteredBoxes.length > 0)) return [3 /*break*/, 5];
+                        ts = Date.now();
+                        indicesNms = nonMaxSuppression$1(filteredBoxes, filteredScores, 0.7, false);
+                        stats.stage3_nms = Date.now() - ts;
+                        finalBoxes = indicesNms.map(function (idx) { return filteredBoxes[idx]; });
+                        finalScores = indicesNms.map(function (idx) { return filteredScores[idx]; });
+                        return [4 /*yield*/, Promise.all(indicesNms.map(function (idx, i) {
+                                return Promise.all(Array(5).fill(0).map(function (_, ptIdx) { return __awaiter(_this, void 0, void 0, function () {
+                                    var pointsData;
+                                    return __generator(this, function (_a) {
+                                        switch (_a.label) {
+                                            case 0: return [4 /*yield*/, onetOuts[idx].points.array()];
+                                            case 1:
+                                                pointsData = _a.sent();
+                                                return [2 /*return*/, new Point(((pointsData[0][ptIdx] * (finalBoxes[i].width + 1)) + finalBoxes[i].left), ((pointsData[0][ptIdx + 5] * (finalBoxes[i].height + 1)) + finalBoxes[i].top))];
+                                        }
+                                    });
+                                }); }));
+                            }))];
+                    case 4:
+                        points = _c.sent();
+                        _c.label = 5;
+                    case 5:
                         onetOuts.forEach(function (t) {
                             t.regions.dispose();
                             t.scores.dispose();

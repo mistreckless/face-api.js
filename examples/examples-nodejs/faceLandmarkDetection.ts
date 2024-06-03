@@ -5,11 +5,16 @@ import { canvas, faceDetectionNet, faceDetectionOptions, saveFile } from './comm
 async function run() {
 
   await faceDetectionNet.loadFromDisk('../../weights')
+  await faceapi.nets.mtcnn.loadFromDisk('../../weights')
   await faceapi.nets.faceLandmark68Net.loadFromDisk('../../weights')
+  await faceapi.nets.faceRecognitionNet.loadFromDisk('../../weights')
 
   const img = await canvas.loadImage('../images/bbt1.jpg')
   const results = await faceapi.detectAllFaces(img, faceDetectionOptions)
     .withFaceLandmarks()
+      .withFaceDescriptors()
+
+  console.log(results)
 
   const out = faceapi.createCanvasFromMedia(img) as any
   faceapi.draw.drawDetections(out, results.map(res => res.detection))

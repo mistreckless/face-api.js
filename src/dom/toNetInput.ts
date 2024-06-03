@@ -50,7 +50,9 @@ export async function toNetInput(inputs: TNetInput): Promise<NetInput> {
 
   // wait for all media elements being loaded
   await Promise.all(
-    inputArray.map(input => isMediaElement(input) && awaitMediaLoaded(input))
+    inputArray
+        .filter(input => isMediaElement(input))
+        .map(input => awaitMediaLoaded(input))
   )
 
   return new NetInput(inputArray, Array.isArray(inputs))
